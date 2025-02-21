@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Resizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        #final img {
+            margin-top: 15px;
+            display: block;
+            border-radius: 5px;
+        }
+        button, select, input[type="file"] {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Upload Your Image!</h2>
+        <input type="file" id="input" accept="image/*">
+        <select id="sizes">
+            <option value="300x250">300x250</option>
+            <option value="728x90">728x90</option>
+            <option value="160x600">160x600</option>
+            <option value="300x600">300x600</option>
+        </select>
+        <button onclick="processImage()">Resize Image</button>
+        <div id="final"></div>
+    </div>
+    <script>
+        function processImage() {
+            const fileInput = document.getElementById("input");
+            const finalDiv = document.getElementById("final");
+            
+            if (fileInput.files.length === 0) {
+                alert("Please upload an image.");
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function (event) {
+                const img = new Image();
+                img.src = event.target.result;
+                
+                img.onload = function () {
+                    resizeImage(img);
+                };
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function resizeImage(img) {
+            const finalDiv = document.getElementById("final");
+            finalDiv.innerHTML = "";
+            const sizes = document.getElementById("sizes").value.split("x");
+            const width = parseInt(sizes[0]);
+            const height = parseInt(sizes[1]);
+            
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            const resized = document.createElement("img");
+            const imgurl = canvas.toDataURL("image/png");
+            resized.src = imgurl;
+            finalDiv.appendChild(resized);
+            
+            const uploadButton = document.createElement("button");
+            uploadButton.innerText = "Upload to X";
+            uploadButton.style.display = "block";
+            uploadButton.style.marginTop = "10px";
+            uploadButton.onclick = function() {
+                uploadToX(imgurl);
+            };
+            finalDiv.appendChild(uploadButton);
+            
+            const resizeagain = document.createElement("button");
+            resizeagain.innerText = "Resize Again";
+            resizeagain.style.marginTop = "10px";
+            resizeagain.onclick = function() { 
+                resizeImage(img);
+            };
+            finalDiv.appendChild(resizeagain);
+        }
+
+        function uploadToX(imageData) {
+            fetch("/upload-to-x", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Image uploaded to X successfully!");
+                } else {
+                    alert("Failed to upload image to X.");
+                }
+            })
+            .catch(error => {
+                console.error("Error uploading image:", error);
+                alert("Error uploading image to X.");
+            });
+        }
+    </script>
+</body>
+</html>
